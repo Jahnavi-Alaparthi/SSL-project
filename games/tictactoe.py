@@ -1,135 +1,167 @@
 import pygame
-import sys
 import numpy as np
+import sys
+from base_game import BoardGame
 
-# -------- BASE CLASS --------
-class BoardGame:
-    def __init__(self, p1, p2, size):
-        self.players = [p1, p2]
-        self.turn = 0
-        self.size = size
-        self.board = np.zeros((size, size), dtype=int)
+ROWS = 10
+COLS = 10
+CELL_SIZE = 60
 
-    def switch_turn(self):
-        self.turn = 1 - self.turn
+WIDTH = COLS * CELL_SIZE
+HEIGHT = ROWS * CELL_SIZE
 
-    def current_player(self):
-        return self.players[self.turn]
-
-    def mark(self):
-        return self.turn + 1
+WHITE = (255, 253, 208)
+GOLD = (212, 175, 55)
+BLUE = (1, 120, 144)
+YELLOW = (255, 215, 0)
+RED = (255, 0, 0)
+BLACK = (0, 0, 0)
 
 
-# -------- TIC TAC TOE --------
 class TicTacToe(BoardGame):
-    def __init__(self, p1, p2):
-        super().__init__(p1, p2, 10)
-        self.k = 5
+    def __init__(self, player1, player2):
+        super().__init__(player1, player2, ROWS, COLS)
+        self.board = np.zeros((ROWS, COLS))
 
     def check_win(self):
+        p = self.current_player
         b = self.board
 
-        h = (b[:, :-4] == b[:, 1:-3]) & \
-            (b[:, :-4] == b[:, 2:-2]) & \
-            (b[:, :-4] == b[:, 3:-1]) & \
-            (b[:, :-4] == b[:, 4:]) & \
-            (b[:, :-4] != 0)
+        # Horizontal
+        for r in range(self.rows):
+            for c in range(self.cols - 4):
+                if np.all(b[r, c:c+5] == p):
+                    return (r, c), (r, c+4)
 
-        v = (b[:-4, :] == b[1:-3, :]) & \
-            (b[:-4, :] == b[2:-2, :]) & \
-            (b[:-4, :] == b[3:-1, :]) & \
-            (b[:-4, :] == b[4:, :]) & \
-            (b[:-4, :] != 0)
+        # Vertical
+        for c in range(self.cols):
+            for r in range(self.rows - 4):
+                if np.all(b[r:r+5, c] == p):
+                    return (r, c), (r+4, c)
 
-        d1 = (b[:-4, :-4] == b[1:-3, 1:-3]) & \
-             (b[:-4, :-4] == b[2:-2, 2:-2]) & \
-             (b[:-4, :-4] == b[3:-1, 3:-1]) & \
-             (b[:-4, :-4] == b[4:, 4:]) & \
-             (b[:-4, :-4] != 0)
+        # Diagonal \
+        for r in range(self.rows - 4):
+            for c in range(self.cols - 4):
+                if all(b[r+i][c+i] == p for i in range(5)):
+                    return (r, c), (r+4, c+4)
 
-        d2 = (b[4:, :-4] == b[3:-1, 1:-3]) & \
-             (b[4:, :-4] == b[2:-2, 2:-2]) & \
-             (b[4:, :-4] == b[1:-3, 3:-1]) & \
-             (b[4:, :-4] == b[:-4, 4:]) & \
-             (b[4:, :-4] != 0)
+        # Diagonal /
+        for r in range(self.rows - 4):
+            for c in range(4, self.cols):
+                if all(b[r+i][c-i] == p for i in range(5)):
+                    return (r, c), (r+4, c-4)
 
-        return np.any(h) or np.any(v) or np.any(d1) or np.any(d2)
+        return None
 
-
-# -------- GUI --------
-class GUI:
-    def __init__(self, game):
-        pygame.init()
-        self.game = game
-        self.size = 600
-        self.cell = self.size // game.size
-
-        self.screen = pygame.display.set_mode((self.size, self.size))
-        pygame.display.set_caption("Tic Tac Toe 10x10")
-
-    def draw(self):
-        self.screen.fill((255, 255, 255))
-
-        # grid
-        for i in range(self.game.size):
-            pygame.draw.line(self.screen, (0, 0, 0),
-                             (0, i * self.cell), (self.size, i * self.cell))
-            pygame.draw.line(self.screen, (0, 0, 0),
-                             (i * self.cell, 0), (i * self.cell, self.size))
-
-        # marks
-        for r in range(self.game.size):
-            for c in range(self.game.size):
-                val = self.game.board[r][c]
-
-                if val == 1:
-                    pygame.draw.circle(self.screen, (0, 0, 255),
-                                       (c*self.cell + self.cell//2,
-                                        r*self.cell + self.cell//2),
-                                       self.cell//3, 2)
-
-                elif val == 2:
-                    pygame.draw.line(self.screen, (255, 0, 0),
-                                     (c*self.cell+5, r*self.cell+5),
-                                     (c*self.cell+self.cell-5, r*self.cell+self.cell-5), 2)
-                    pygame.draw.line(self.screen, (255, 0, 0),
-                                     (c*self.cell+self.cell-5, r*self.cell+5),
-                                     (c*self.cell+5, r*self.cell+self.cell-5), 2)
-
-    def run(self):
-        while True:
-            self.draw()
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    x, y = event.pos
-                    c = x // self.cell
-                    r = y // self.cell
-
-                    if self.game.board[r][c] == 0:
-                        self.game.board[r][c] = self.game.mark()
-
-                        if self.game.check_win():
-                            print(self.game.current_player(), "wins!")
-                            pygame.time.wait(2000)
-                            return
-
-                        self.game.switch_turn()
-
-            pygame.display.update()
+    def mark_box(self, r, c):
+        if 0 <= r < self.rows and 0 <= c < self.cols:
+            if self.board[r][c] == 0:
+                self.board[r][c] = self.current_player
+                return True
+        return False
 
 
-# -------- START FUNCTION --------
-def start(p1, p2):
-    game = TicTacToe(p1, p2)
-    gui = GUI(game)
-    gui.run()
+def draw_board(screen, game):
+    screen.fill(WHITE)
+
+    for r in range(game.rows):
+        for c in range(game.cols):
+            pygame.draw.rect(
+                screen, GOLD,
+                (c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE), 1
+            )
+
+            if game.board[r][c] == 1:
+                pygame.draw.line(
+                    screen, BLUE,
+                    (c * CELL_SIZE + 10, r * CELL_SIZE + 10),
+                    (c * CELL_SIZE + CELL_SIZE - 10, r * CELL_SIZE + CELL_SIZE - 10), 3
+                )
+                pygame.draw.line(
+                    screen, BLUE,
+                    (c * CELL_SIZE + CELL_SIZE - 10, r * CELL_SIZE + 10),
+                    (c * CELL_SIZE + 10, r * CELL_SIZE + CELL_SIZE - 10), 3
+                )
+
+            elif game.board[r][c] == 2:
+                pygame.draw.circle(
+                    screen, YELLOW,
+                    (c * CELL_SIZE + CELL_SIZE // 2,
+                     r * CELL_SIZE + CELL_SIZE // 2),
+                    CELL_SIZE // 3, 3
+                )
 
 
-# -------- DIRECT RUN (FOR TESTING) --------
+def draw_winning_line(screen, start, end):
+    r1, c1 = start
+    r2, c2 = end
+
+    x1 = c1 * CELL_SIZE + CELL_SIZE // 2
+    y1 = r1 * CELL_SIZE + CELL_SIZE // 2
+    x2 = c2 * CELL_SIZE + CELL_SIZE // 2
+    y2 = r2 * CELL_SIZE + CELL_SIZE // 2
+
+    pygame.draw.line(screen, RED, (x1, y1), (x2, y2), 5)
+
+
+def show_winner(screen, text):
+    font = pygame.font.SysFont(None, 60)
+    render = font.render(text, True, BLACK)
+    rect = render.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+    screen.blit(render, rect)
+
+
+def run_game(player1, player2):
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("TIC-TAC-TOE ")
+
+    game = TicTacToe(player1, player2)
+    winner = None
+    running = True
+
+    while running:
+        draw_board(screen, game)
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN and winner is None:
+                x, y = event.pos
+                c = x // CELL_SIZE
+                r = y // CELL_SIZE
+
+                if game.mark_box(r, c):
+
+                    win_result = game.check_win()
+
+                    if win_result:
+                        winner = game.get_current_player_name()
+                        start, end = win_result
+
+                        draw_board(screen, game)
+                        draw_winning_line(screen, start, end)
+                        show_winner(screen, f"{winner} Wins!")
+
+                        pygame.display.update()
+                        pygame.time.delay(3000)
+                        running = False
+                        break
+
+                    game.switch_turn()
+
+        pygame.display.update()
+
+    pygame.quit()
+    return winner
+
+
+# For testing directly
 if __name__ == "__main__":
-    start("A", "B")
+    p1 = sys.argv[1] if len(sys.argv) > 1 else "Player1"
+    p2 = sys.argv[2] if len(sys.argv) > 2 else "Player2"
+
+    run_game(p1, p2)
