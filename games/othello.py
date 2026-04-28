@@ -1,140 +1,199 @@
 import pygame
+import sys
 import numpy as np
-from game import BoardGame
+
+SIZE = 8
+CELL = 80
+
+WIDTH = SIZE * CELL
+HEIGHT = SIZE * CELL + 50  # space for text
+
+# colours
+WHITE = (255, 255, 255)
+GREEN = (0, 120, 0)
+BLACK = (0, 0, 0)
+YELLOW = (255, 215, 0)
+BLUE = (0, 0, 255)
 
 
-class Othello(BoardGame):
+# using base class
+class Game:
+    def __init__(self):
+        self.board = np.zeros((SIZE, SIZE))
 
-    def __init__(self, player1, player2):
-        super().__init__(player1, player2, ["B", "W"])
+        mid = SIZE // 2
+        self.board[mid-1][mid-1] = 2
+        self.board[mid][mid] = 2
+        self.board[mid-1][mid] = 1
+        self.board[mid][mid-1] = 1
 
-        self.size = 8
-        self.cell_size = 70
 
-        self.board = np.full((self.size, self.size), "")
-        self.game_over = False
+# code for othello game
+class Othello(Game):
 
-        # Initial 4 pieces
-        mid = self.size // 2
-        self.board[mid-1][mid-1] = "W"
-        self.board[mid][mid] = "W"
-        self.board[mid-1][mid] = "B"
-        self.board[mid][mid-1] = "B"
+    def draw_board(self, screen, current):
+        screen.fill(WHITE)
 
-    def draw(self, screen):
-        for row in range(self.size):
-            for col in range(self.size):
+        current_moves = self.get_moves(current)
+        other = 2 if current == 1 else 1
+        other_moves = self.get_moves(other)
 
-                pygame.draw.rect(
-                    screen,
-                    (0, 128, 0),
-                    (col * self.cell_size,
-                     row * self.cell_size,
-                     self.cell_size,
-                     self.cell_size)
-                )
+        for r in range(SIZE):
+            for c in range(SIZE):
+                pygame.draw.rect(screen, GREEN,
+                                 (c*CELL, r*CELL, CELL, CELL))
+                pygame.draw.rect(screen, BLACK,
+                                 (c*CELL, r*CELL, CELL, CELL), 2)
 
-                pygame.draw.rect(
-                    screen,
-                    (0, 0, 0),
-                    (col * self.cell_size,
-                     row * self.cell_size,
-                     self.cell_size,
-                     self.cell_size),
-                    1
-                )
+                # yellow colours for Current player moves
+                if (r, c) in current_moves:
+                    pygame.draw.circle(screen, YELLOW,
+                                       (c*CELL + CELL//2, r*CELL + CELL//2), 8)
 
-                piece = self.board[row][col]
+                # blue colour for Other player moves
+                elif (r, c) in other_moves:
+                    pygame.draw.circle(screen, BLUE,
+                                       (c*CELL + CELL//2, r*CELL + CELL//2), 6)
 
-                if piece == "B":
-                    pygame.draw.circle(
-                        screen, (0, 0, 0),
-                        (col * self.cell_size + self.cell_size // 2,
-                         row * self.cell_size + self.cell_size // 2),
-                        self.cell_size // 3
-                    )
+                # black and white coins
+                if self.board[r][c] == 1:
+                    pygame.draw.circle(screen, BLACK,
+                                       (c*CELL + CELL//2, r*CELL + CELL//2), 32)
+                elif self.board[r][c] == 2:
+                    pygame.draw.circle(screen, WHITE,
+                                       (c*CELL + CELL//2, r*CELL + CELL//2), 32)
 
-                elif piece == "W":
-                    pygame.draw.circle(
-                        screen, (255, 255, 255),
-                        (col * self.cell_size + self.cell_size // 2,
-                         row * self.cell_size + self.cell_size // 2),
-                        self.cell_size // 3
-                    )
-
-    def handle_click(self, pos):
-        if self.game_over:
-            return
-
-        x, y = pos
-        row = y // self.cell_size
-        col = x // self.cell_size
-
-        if not self.is_valid_move(row, col):
-            return
-
-        symbol = self.get_symbol()
-        self.board[row][col] = symbol
-
-        self.flip_pieces(row, col, symbol)
-
-        self.switch_turn()
-
-    def is_valid_move(self, row, col):
-        if self.board[row][col] != "":
+    def is_valid(self, r, c, player):
+        if self.board[r][c] != 0:
             return False
 
-        symbol = self.get_symbol()
-        opponent = "W" if symbol == "B" else "B"
+        opp = 2 if player == 1 else 1
+        dirs = [(-1,-1), (-1,0), (-1,1),
+                (0,-1),         (0,1),
+                (1,-1), (1,0), (1,1)]
 
-        directions = [
-            (-1, -1), (-1, 0), (-1, 1),
-            (0, -1),          (0, 1),
-            (1, -1), (1, 0),  (1, 1)
-        ]
+        for dr, dc in dirs:
+            x, y = r+dr, c+dc
+            found = False
 
-        for dr, dc in directions:
-            r, c = row + dr, col + dc
-            found_opponent = False
-
-            while 0 <= r < self.size and 0 <= c < self.size:
-                if self.board[r][c] == opponent:
-                    found_opponent = True
-                elif self.board[r][c] == symbol:
-                    if found_opponent:
+            while 0 <= x < SIZE and 0 <= y < SIZE:
+                if self.board[x][y] == opp:
+                    found = True
+                elif self.board[x][y] == player:
+                    if found:
                         return True
                     break
                 else:
                     break
 
-                r += dr
-                c += dc
+                x += dr
+                y += dc
 
         return False
 
-    def flip_pieces(self, row, col, symbol):
+    def make_move(self, r, c, player):
+        opp = 2 if player == 1 else 1
+        self.board[r][c] = player
 
-        opponent = "W" if symbol == "B" else "B"
+        dirs = [(-1,-1), (-1,0), (-1,1),
+                (0,-1),         (0,1),
+                (1,-1), (1,0), (1,1)]
 
-        directions = [
-            (-1, -1), (-1, 0), (-1, 1),
-            (0, -1),          (0, 1),
-            (1, -1), (1, 0),  (1, 1)
-        ]
-
-        for dr, dc in directions:
-            r, c = row + dr, col + dc
+        for dr, dc in dirs:
+            x, y = r+dr, c+dc
             path = []
 
-            while 0 <= r < self.size and 0 <= c < self.size:
-                if self.board[r][c] == opponent:
-                    path.append((r, c))
-                elif self.board[r][c] == symbol:
-                    for pr, pc in path:
-                        self.board[pr][pc] = symbol
+            while 0 <= x < SIZE and 0 <= y < SIZE:
+                if self.board[x][y] == opp:
+                    path.append((x, y))
+                elif self.board[x][y] == player:
+                    for px, py in path:
+                        self.board[px][py] = player
                     break
                 else:
                     break
+                x += dr
+                y += dc
 
-                r += dr
-                c += dc
+    def get_moves(self, player):
+        return [(r, c) for r in range(SIZE)
+                        for c in range(SIZE)
+                        if self.is_valid(r, c, player)]
+
+    def get_winner(self, p1, p2):
+        b = np.sum(self.board == 1)
+        w = np.sum(self.board == 2)
+
+        if b > w:
+            return p1
+        elif w > b:
+            return p2
+        else:
+            return "Draw"
+
+
+# main game 
+def run_othello(player1, player2):
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Othello")
+
+    font = pygame.font.SysFont(None, 40)
+    win_font = pygame.font.SysFont(None, 60)
+
+    game = Othello()
+    current = 1
+    winner = None
+
+    running = True
+
+    while running:
+        game.draw_board(screen, current)
+
+        # shows who turn it is
+        turn_text = "Black Turn" if current == 1 else "White Turn"
+        text = font.render(turn_text, True, BLACK)
+        screen.blit(text, (10, HEIGHT - 40))
+
+        # shows name of winner
+        if winner:
+            screen.fill(WHITE)
+            win_text = win_font.render(f"🏆 {winner} Wins!", True, BLACK)
+            rect = win_text.get_rect(center=(WIDTH//2, HEIGHT//2))
+            screen.blit(win_text, rect)
+            pygame.display.update()
+            pygame.time.delay(3000)
+            break
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = event.pos
+                c = x // CELL
+                r = y // CELL
+
+                if r < SIZE and c < SIZE:
+                    if (r, c) in game.get_moves(current):
+                        game.make_move(r, c, current)
+
+                        # switch player
+                        current = 2 if current == 1 else 1
+
+                        # check game over
+                        if not game.get_moves(1) and not game.get_moves(2):
+                            winner = game.get_winner(player1, player2)
+
+        pygame.display.update()
+
+    pygame.quit()
+    return winner
+
+
+# run the game
+if __name__ == "__main__":
+    run_othello("Player1", "Player2")
+
