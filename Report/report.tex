@@ -1,0 +1,154 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{
+colorlinks=true,
+urlcolor=blue,
+}
+\title{SSL-project Report}
+\author{Jahnavi Alaparthi}
+
+
+\begin{document}
+
+\maketitle
+
+\section{External Libraries Used}
+
+The following external libraries were used in the development of the Mini Game Hub project:
+
+\begin{itemize}
+
+\item \textbf{Pygame}: This library was used to design and implement the graphical user interface of the games. It handles rendering of visuals, user input through keyboard and mouse, and real-time interaction within the game environment.
+
+\item \textbf{NumPy}: NumPy was used for efficient numerical computations and handling array-based data structures required for game logic and score calculations.
+
+\item \textbf{Matplotlib}: This library was used to visualize player performance and score distributions through graphs, making the leaderboard analysis more intuitive.
+
+\item \textbf{sys}: The sys module was used for system-level operations such as exiting the program and handling command-line arguments.
+
+\item \textbf{subprocess}: This module was used to execute and manage different game modules independently from the main hub, enabling modular design.
+
+\item \textbf{datetime}: The datetime module was used to record timestamps for user activity, such as login time and game sessions.
+
+\item \textbf{collections}: This module was used for advanced data structures like \texttt{defaultdict} and \texttt{Counter}, which helped in efficient management of leaderboard data.
+
+\item \textbf{csv}: The csv module was used for reading from and writing to files for storing user data and leaderboard information persistently.
+
+\end{itemize}
+
+\section{Features Implemented}
+
+The Mini Game Hub project includes the following key features:
+
+\begin{itemize}
+
+\item \textbf{User Authentication}: A login and registration system is implemented to allow users to securely access the platform. User credentials are stored and verified before granting access.
+
+\item \textbf{Multi-Game Selection}: The system provides multiple games, and users can select and play any game through a menu-driven interface.
+
+\item \textbf{Common Base Class Design}: All games are derived from a generic base class. This base class defines shared functionalities such as initialization, input handling, execution flow, and result display. Individual games override specific methods to implement their own logic. This follows the principle of inheritance and improves modularity and code reusability.
+
+\item \textbf{Leaderboard System}: A leaderboard is maintained to store and display player scores. It helps in comparing performance across different users and keeps track of high scores.
+
+\item \textbf{Bar Graph Visualization}: Player performance and scores are represented using bar graphs, making the analysis more visual and intuitive.
+
+\item \textbf{Winner Display}: After each game, the winner’s name is displayed clearly on the screen to indicate the result.
+
+\item \textbf{Modular Game Structure}: Each game is implemented as a separate class or module, making the system easy to maintain and extend.
+
+\item \textbf{Persistent Data Storage}: User data and leaderboard scores are stored in files, ensuring that the data is preserved across multiple runs of the program.
+
+\item \textbf{Interactive Interface}: The project provides an interactive interface using graphical elements, improving the overall user experience.
+
+\item \textbf{Input Validation and Error Handling}: The system checks user inputs and handles invalid cases gracefully to prevent crashes and ensure smooth execution.
+
+\end{itemize}
+
+\section{Code Logic Explanation}
+
+\subsection{Generic Base Class}
+
+The base class is implemented in \texttt{base\_game.py}. It initializes common attributes such as \texttt{player1}, \texttt{player2}, number of rows, and number of columns.
+
+It provides the following functionalities:
+\begin{itemize}
+\item Switching turns between players
+\item Retrieving the current player name
+\item Resetting the game state
+\end{itemize}
+
+All games inherit from this class and reuse these functionalities while implementing their own logic. This follows the principle of inheritance and improves modularity.
+
+\subsection{Individual Games}
+
+Each game is implemented as a separate class that inherits from the base class. The games define their own rules, input handling, and scoring mechanisms.
+
+The general flow of a game includes:
+\begin{itemize}
+\item Taking user input
+\item Processing game logic
+\item Determining the result
+\item Displaying the output
+\end{itemize}
+
+\subsection{Authentication System}
+
+The authentication system allows users to register and log in. User credentials are stored in a file and verified during login.
+
+If the entered credentials match the stored data, access is granted. Otherwise, an error message is displayed.
+
+\subsection{Leaderboard System}
+
+The leaderboard stores player scores and updates them after each game. The data is retrieved and displayed in a sorted format to show rankings.
+
+Bar graphs are also used to visualize performance.
+
+\section{Hurdles Faced}
+
+\begin{itemize}
+
+\item \textbf{Board Size Issue in Othello}: The initial board size in \texttt{othello.py} was too large, making it difficult to track player turns and determine the winner clearly.
+\textbf{Resolution:} The board size was adjusted dynamically to fit the screen, improving visibility and gameplay clarity.
+
+\item \textbf{Missing Commits on April 11}: Commits made on April 11 were not visible in the repository history later.
+\textbf{Resolution:} This issue could not be fully resolved. However, the GitHub contribution graph and browser history confirm that commits were made on that day.
+
+\item \textbf{Incorrect Git Username}: The username displayed in VS Code was incorrect due to a configuration error.
+\textbf{Resolution:} The issue was fixed by updating the Git configuration using:
+\begin{verbatim}
+git config --global user.name "YourCorrectName"
+\end{verbatim}
+
+\item \textbf{Forgetting to Pull Before Commit}: Changes were committed without pulling the latest updates, which could lead to inconsistencies.
+\textbf{Resolution:} Adopted the correct workflow of pulling changes before committing and pushing updates.
+
+\end{itemize}
+
+\section{What I Would Do Differently with 10 More Hours}
+
+Given additional time, the following improvements would be implemented:
+
+\begin{itemize}
+
+\item \textbf{Feature Feasibility Analysis}: Before implementing new features, I would verify their feasibility with the available libraries to avoid incomplete or inefficient implementations.
+
+\item \textbf{Improved Visual Design}: Enhance the graphical interface by representing game elements (such as coins) using more advanced visuals, potentially including 3D-like effects instead of simple 2D shapes.
+
+\item \textbf{User Profile System}: Introduce a feature allowing users to select a profile image (real image or avatar), improving personalization.
+
+\item \textbf{Enhanced Winner Display}: Display the winner’s name along with their profile image and add visual effects such as animations or celebratory popups.
+
+\item \textbf{Better Git Workflow}: Follow a stricter version control workflow, including regular commits, proper branching, and pulling updates before pushing changes.
+
+\item \textbf{Stronger Error Handling}: Improve input validation and error handling to make the system more robust.
+
+\end{itemize}
+\nocite{*}
+\section{Bibliography}
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}
