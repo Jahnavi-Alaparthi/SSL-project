@@ -3,20 +3,17 @@ import sys
 import numpy as np
 
 SIZE = 8
-CELL = 80
+CELL = 60   
 
 WIDTH = SIZE * CELL
-HEIGHT = SIZE * CELL + 50  # space for text
+HEIGHT = SIZE * CELL + 50
 
 # colours
 WHITE = (255, 255, 255)
 GREEN = (0, 120, 0)
 BLACK = (0, 0, 0)
-YELLOW = (255, 215, 0)
-BLUE = (0, 0, 255)
 
 
-# using base class
 class Game:
     def __init__(self):
         self.board = np.zeros((SIZE, SIZE))
@@ -28,15 +25,12 @@ class Game:
         self.board[mid][mid-1] = 1
 
 
-# code for othello game
 class Othello(Game):
 
     def draw_board(self, screen, current):
         screen.fill(WHITE)
 
         current_moves = self.get_moves(current)
-        other = 2 if current == 1 else 1
-        other_moves = self.get_moves(other)
 
         for r in range(SIZE):
             for c in range(SIZE):
@@ -45,23 +39,19 @@ class Othello(Game):
                 pygame.draw.rect(screen, BLACK,
                                  (c*CELL, r*CELL, CELL, CELL), 2)
 
-                # yellow colours for Current player moves
+                # show only current player moves
                 if (r, c) in current_moves:
-                    pygame.draw.circle(screen, YELLOW,
+                    color = BLACK if current == 1 else WHITE
+                    pygame.draw.circle(screen, color,
                                        (c*CELL + CELL//2, r*CELL + CELL//2), 8)
 
-                # blue colour for Other player moves
-                elif (r, c) in other_moves:
-                    pygame.draw.circle(screen, BLUE,
-                                       (c*CELL + CELL//2, r*CELL + CELL//2), 6)
-
-                # black and white coins
+                # draw coins
                 if self.board[r][c] == 1:
                     pygame.draw.circle(screen, BLACK,
-                                       (c*CELL + CELL//2, r*CELL + CELL//2), 32)
+                                       (c*CELL + CELL//2, r*CELL + CELL//2), 25)
                 elif self.board[r][c] == 2:
                     pygame.draw.circle(screen, WHITE,
-                                       (c*CELL + CELL//2, r*CELL + CELL//2), 32)
+                                       (c*CELL + CELL//2, r*CELL + CELL//2), 25)
 
     def is_valid(self, r, c, player):
         if self.board[r][c] != 0:
@@ -131,13 +121,12 @@ class Othello(Game):
             return "Draw"
 
 
-# main game 
 def run_othello(player1, player2):
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Othello")
 
-    font = pygame.font.SysFont(None, 40)
+    font = pygame.font.SysFont(None, 35)
     win_font = pygame.font.SysFont(None, 60)
 
     game = Othello()
@@ -149,17 +138,24 @@ def run_othello(player1, player2):
     while running:
         game.draw_board(screen, current)
 
-        # shows who turn it is
+        
         turn_text = "Black Turn" if current == 1 else "White Turn"
         text = font.render(turn_text, True, BLACK)
         screen.blit(text, (10, HEIGHT - 40))
 
-        # shows name of winner
+        
         if winner:
             screen.fill(WHITE)
-            win_text = win_font.render(f"🏆 {winner} Wins!", True, BLACK)
+
+            if winner == "Draw":
+                msg = "It's a Draw!"
+            else:
+                msg = f"🏆 {winner} Wins!"
+
+            win_text = win_font.render(msg, True, BLACK)
             rect = win_text.get_rect(center=(WIDTH//2, HEIGHT//2))
             screen.blit(win_text, rect)
+
             pygame.display.update()
             pygame.time.delay(3000)
             break
@@ -179,10 +175,14 @@ def run_othello(player1, player2):
                     if (r, c) in game.get_moves(current):
                         game.make_move(r, c, current)
 
-                        # switch player
+                        
                         current = 2 if current == 1 else 1
 
-                        # check game over
+                        
+                        if not game.get_moves(current):
+                            current = 2 if current == 1 else 1
+
+                        
                         if not game.get_moves(1) and not game.get_moves(2):
                             winner = game.get_winner(player1, player2)
 
@@ -192,6 +192,5 @@ def run_othello(player1, player2):
     return winner
 
 
-# run the game
 if __name__ == "__main__":
     run_othello("Player1", "Player2")
