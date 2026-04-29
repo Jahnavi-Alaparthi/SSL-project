@@ -108,11 +108,10 @@ def show_leaderboard(sort_by):
         print("Error:", e)
 
 # ---------------- DISPLAY ----------------
-WIDTH, HEIGHT = 600, 450
+WIDTH, HEIGHT = 900, 650
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Mini Game Hub")
 
-# load background properly
 def load_background():
     bg_original = pygame.image.load("background.jpg")
     img_w, img_h = bg_original.get_size()
@@ -129,15 +128,14 @@ def load_background():
 
 background, bg_x, bg_y = load_background()
 
-# overlay
 overlay = pygame.Surface((WIDTH, HEIGHT))
 overlay.set_alpha(120)
 overlay.fill((0, 0, 0))
 
-font = pygame.font.SysFont(None, 36)
+font = pygame.font.SysFont(None, 42)
 WHITE = (255, 255, 255)
 
-# 🔥 RESET DISPLAY FUNCTION
+# ---------------- RESET ----------------
 def reset_main_display():
     global screen, background, bg_x, bg_y, overlay
 
@@ -173,18 +171,18 @@ class Button:
 
 # ---------------- LEADERBOARD GUI ----------------
 def leaderboard_sort_gui():
-    options = ["win", "loss", "ratio", "game"]
+    options = ["No of wins", "No of losses", "Win/Loss ratio", "Game Name"]
 
     while True:
         screen.blit(background, (bg_x, bg_y))
         screen.blit(overlay, (0, 0))
 
         title = font.render("Sort Leaderboard", True, WHITE)
-        screen.blit(title, title.get_rect(center=(WIDTH // 2, 40)))
+        screen.blit(title, title.get_rect(center=(WIDTH // 2, 80)))
 
         buttons = []
         for i, opt in enumerate(options):
-            b = Button(opt.upper(), 180, 100 + i * 60, 240, 40, opt)
+            b = Button(opt.upper(), 300, 150 + i * 80, 300, 50, opt)
             b.draw()
             buttons.append(b)
 
@@ -207,14 +205,14 @@ def post_game_screen(winner, game_name):
         screen.blit(overlay, (0, 0))
 
         title = font.render(f"{winner} WON!", True, WHITE)
-        screen.blit(title, title.get_rect(center=(WIDTH // 2, 60)))
+        screen.blit(title, title.get_rect(center=(WIDTH // 2, 100)))
 
         buttons = [
-            Button("Play Again", 180, 120, 240, 40, "again"),
-            Button("Main Menu", 180, 180, 240, 40, "menu"),
-            Button("Graphs", 180, 240, 240, 40, "graphs"),
-            Button("Leaderboard", 180, 300, 240, 40, "leaderboard"),
-            Button("Exit", 180, 360, 240, 40, "exit"),
+            Button("Play Again", 300, 180, 300, 50, "again"),
+            Button("Main Menu", 300, 250, 300, 50, "menu"),
+            Button("Graphs", 300, 320, 300, 50, "graphs"),
+            Button("Leaderboard", 300, 390, 300, 50, "leaderboard"),
+            Button("Exit", 300, 460, 300, 50, "exit"),
         ]
 
         for b in buttons:
@@ -249,7 +247,6 @@ def handle_game(run_func, game_name):
 
         record_result(winner, loser, game_name)
 
-        # 🔥 CLEAN RESET
         reset_main_display()
 
         action = post_game_screen(winner, game_name)
@@ -267,10 +264,10 @@ def game_menu_gui():
     running = True
 
     buttons = [
-        Button("TicTacToe", 180, 100, 240, 40, "ttt"),
-        Button("Connect4", 180, 160, 240, 40, "c4"),
-        Button("Othello", 180, 220, 240, 40, "oth"),
-        Button("Exit", 180, 280, 240, 40, "exit"),
+        Button("TicTacToe", 300, 200, 300, 50, "ttt"),
+        Button("Connect4", 300, 270, 300, 50, "c4"),
+        Button("Othello", 300, 340, 300, 50, "oth"),
+        Button("Exit", 300, 410, 300, 50, "exit"),
     ]
 
     while running:
@@ -278,7 +275,7 @@ def game_menu_gui():
         screen.blit(overlay, (0, 0))
 
         title = font.render(f"{player1} vs {player2}", True, WHITE)
-        screen.blit(title, title.get_rect(center=(WIDTH // 2, 40)))
+        screen.blit(title, title.get_rect(center=(WIDTH // 2, 100)))
 
         for b in buttons:
             b.draw()
