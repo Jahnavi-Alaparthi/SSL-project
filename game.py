@@ -6,16 +6,11 @@ from datetime import datetime
 import pygame
 import matplotlib.pyplot as plt
 
-# -----------------------------
-# INIT
-# -----------------------------
 pygame.init()
 bg_image = pygame.image.load("bg.png")
 bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
 
-# -----------------------------
-# INPUT USERS
-# -----------------------------
+# user input
 if len(sys.argv) < 3:
     print("Error: Missing usernames")
     sys.exit(1)
@@ -36,15 +31,11 @@ if not os.path.exists(HISTORY_FILE):
     with open(HISTORY_FILE, "w", newline="") as f:
         csv.writer(f).writerow(["Winner", "Loser", "Date", "Game"])
 
-# -----------------------------
-# CLEAN
-# -----------------------------
 def clean(name):
     return str(name).replace('"', '').strip() if name else "DRAW"
 
-# -----------------------------
-# RECORD RESULT
-# -----------------------------
+
+
 def record_result(winner, loser, game):
     winner = clean(winner)
     loser = clean(loser) if loser else "DRAW"
@@ -52,9 +43,9 @@ def record_result(winner, loser, game):
     with open(HISTORY_FILE, "a", newline="") as f:
         csv.writer(f).writerow([winner, loser, datetime.now(), game])
 
-# -----------------------------
-# GRAPH FUNCTION
-# -----------------------------
+
+# ---------------- GRAPHS ----------------
+
 def show_graphs():
     try:
         import csv
@@ -90,7 +81,11 @@ def show_graphs():
             plt.bar(win_counts.keys(), win_counts.values())
             plt.title("Wins per Player")
 
-        game_counts = Counter(games)
+
+        plt.figure()
+        plt.bar(players, wins)
+        plt.title("Top 5 Players")
+
 
         if game_counts:
             plt.figure()
@@ -102,12 +97,9 @@ def show_graphs():
 
         input("Close graph window and press Enter to continue...")
 
-    except Exception as e:
-        print("Graph error:", e)
 
-# -----------------------------
-# GAME IMPORTS
-# -----------------------------
+# ---------------- GAMES ----------------
+
 def run_ttt(p1, p2):
     from games.tictactoe import run_game
     return run_game(p1, p2)
@@ -126,33 +118,53 @@ def run_oth(p1, p2):
 def post_game():
     print("\n========== LEADERBOARD ==========")
 
-    result = subprocess.run(
-        ["bash", "leaderboard.sh", "win"],
-        capture_output=True,
-        text=True
-    )
+# ---------------- DISPLAY ----------------
+WIDTH, HEIGHT = 900, 650
 
-    print(result.stdout)
-
-    print("\n========== GRAPHS ==========")
-    show_graphs()
-
-# -----------------------------
-# PYGAME UI
-# -----------------------------
-WIDTH, HEIGHT = 600, 450
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Mini Game Hub")
 
-font = pygame.font.SysFont(None, 36)
+def load_background():
+    bg_original = pygame.image.load("background.jpg")
+    img_w, img_h = bg_original.get_size()
 
+    scale = min(WIDTH / img_w, HEIGHT / img_h)
+    new_w = int(img_w * scale)
+    new_h = int(img_h * scale)
+
+    bg = pygame.transform.smoothscale(bg_original, (new_w, new_h))
+    x = (WIDTH - new_w) // 2
+    y = (HEIGHT - new_h) // 2
+
+    return bg, x, y
+
+background, bg_x, bg_y = load_background()
+
+overlay = pygame.Surface((WIDTH, HEIGHT))
+overlay.set_alpha(120)
+overlay.fill((0, 0, 0))
+
+font = pygame.font.SysFont(None, 42)
 WHITE = (255, 255, 255)
-BLUE = (100, 150, 255)
-BLACK = (0, 0, 0)
 
-# -----------------------------
-# BUTTON CLASS
-# -----------------------------
+
+# ---------------- RESET ----------------
+def reset_main_display():
+    global screen, background, bg_x, bg_y, overlay
+
+    pygame.display.quit()
+    pygame.display.init()
+
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Mini Game Hub")
+
+    background, bg_x, bg_y = load_background()
+
+    overlay = pygame.Surface((WIDTH, HEIGHT))
+    overlay.set_alpha(120)
+    overlay.fill((0, 0, 0))
+
+# ---------------- BUTTON ----------------
 class Button:
     def __init__(self, text, x, y, w, h, action):
         self.text = text
@@ -160,30 +172,64 @@ class Button:
         self.action = action
 
     def draw(self):
-        pygame.draw.rect(screen, BLUE, self.rect)
-        screen.blit(font.render(self.text, True, BLACK),
-                    (self.rect.x + 10, self.rect.y + 10))
+
+        pygame.draw.rect(screen, (0, 0, 0), self.rect)
+        pygame.draw.rect(screen, WHITE, self.rect, 2)
+
+        text_surface = font.render(self.text, True, WHITE)
+        text_rect = text_surface.get_rect(center=self.rect.center)
+        screen.blit(text_surface, text_rect)
 
     def clicked(self, pos):
         return self.rect.collidepoint(pos)
 
-# -----------------------------
-# MAIN MENU
-# -----------------------------
-def game_menu_gui():
-    running = True
 
-    buttons = [
-        Button("TicTacToe", 180, 80, 240, 40, "1"),
-        Button("Connect4", 180, 140, 240, 40, "2"),
-        Button("Othello", 180, 200, 240, 40, "3"),
-        Button("Exit", 180, 260, 240, 40, "4"),
-    ]
+# ---------------- LEADERBOARD GUI ----------------
+def leaderboard_sort_gui():
+    options = ["No of wins", "No of losses", "Win/Loss ratio", "Game Name"]
 
-    while running:
-        screen.fill(WHITE)
+    while True:
+        screen.blit(background, (bg_x, bg_y))
+        screen.blit(overlay, (0, 0))
 
-        screen.blit(font.render(f"{player1} vs {player2}", True, BLACK), (180, 20))
+        title = font.render("Sort Leaderboard", True, WHITE)
+        screen.blit(title, title.get_rect(center=(WIDTH // 2, 80)))
+
+        buttons = []
+        for i, opt in enumerate(options):
+            b = Button(opt.upper(), 300, 150 + i * 80, 300, 50, opt)
+            b.draw()
+            buttons.append(b)
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()
+                for b in buttons:
+                    if b.clicked(pos):
+                        show_leaderboard(b.action)
+                        return
+
+# ---------------- POST GAME ----------------
+def post_game_screen(winner, game_name):
+    while True:
+        screen.blit(background, (bg_x, bg_y))
+        screen.blit(overlay, (0, 0))
+
+        title = font.render(f"{winner} WON!", True, WHITE)
+        screen.blit(title, title.get_rect(center=(WIDTH // 2, 100)))
+
+        buttons = [
+            Button("Play Again", 300, 180, 300, 50, "again"),
+            Button("Main Menu", 300, 250, 300, 50, "menu"),
+            Button("Graphs", 300, 320, 300, 50, "graphs"),
+            Button("Leaderboard", 300, 390, 300, 50, "leaderboard"),
+            Button("Exit", 300, 460, 300, 50, "exit"),
+        ]
+
 
         for b in buttons:
             b.draw()
@@ -191,30 +237,27 @@ def game_menu_gui():
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
-                running = False
+
+                return "exit"
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
-
                 for b in buttons:
 
                     if b.clicked(pos):
 
-                        # ---------------- TIC TAC TOE ----------------
-                        if b.action == "1":
-                            result = run_ttt(player1, player2)
+                        if b.action == "graphs":
+                            show_graphs()
+                        elif b.action == "leaderboard":
+                            leaderboard_sort_gui()
+                        else:
+                            return b.action
 
-                            if isinstance(result, tuple):
-                                winner, action = result
-                            else:
-                                winner, action = result, "end"
+# ---------------- GAME FLOW ----------------
+def handle_game(run_func, game_name):
+    while True:
+        result = run_func(player1, player2)
 
-                            loser = player2 if winner == player1 else player1
-                            if winner == "Draw":
-                                loser = None
-
-                            record_result(winner, loser, "TicTacToe")
-                            post_game()
 
                         # ---------------- CONNECT 4 ----------------
                         elif b.action == "2":
@@ -229,24 +272,35 @@ def game_menu_gui():
                             if winner == "Draw":
                                 loser = None
 
-                            record_result(winner, loser, "Connect4")
-                            post_game()
+
+        reset_main_display()
+
+        action = post_game_screen(winner, game_name)
+
 
                         # ---------------- OTHELLO ----------------
                         elif b.action == "3":
                             result = run_oth(player1, player2)
 
-                            if isinstance(result, tuple):
-                                winner, action = result
-                            else:
-                                winner, action = result, "end"
 
-                            loser = player2 if winner == player1 else player1
-                            if winner == "Draw":
-                                loser = None
+# ---------------- MAIN MENU ----------------
+def game_menu_gui():
+    running = True
 
-                            record_result(winner, loser, "Othello")
-                            post_game()
+    buttons = [
+        Button("TicTacToe", 300, 200, 300, 50, "ttt"),
+        Button("Connect4", 300, 270, 300, 50, "c4"),
+        Button("Othello", 300, 340, 300, 50, "oth"),
+        Button("Exit", 300, 410, 300, 50, "exit"),
+    ]
+
+    while running:
+        screen.blit(background, (bg_x, bg_y))
+        screen.blit(overlay, (0, 0))
+
+        title = font.render(f"{player1} vs {player2}", True, WHITE)
+        screen.blit(title, title.get_rect(center=(WIDTH // 2, 100)))
+
 
                         # ---------------- EXIT ----------------
                         elif b.action == "4":
@@ -254,11 +308,27 @@ def game_menu_gui():
 
         pygame.display.flip()
 
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()
+                for b in buttons:
+                    if b.clicked(pos):
+                        if b.action == "ttt":
+                            handle_game(run_ttt, "TicTacToe")
+                        elif b.action == "c4":
+                            handle_game(run_c4, "Connect4")
+                        elif b.action == "oth":
+                            handle_game(run_oth, "Othello")
+                        elif b.action == "exit":
+                            running = False
+
     pygame.quit()
     sys.exit()
 
-# -----------------------------
-# START
-# -----------------------------
+# ---------------- START ----------------
+
 if __name__ == "__main__":
     game_menu_gui()
