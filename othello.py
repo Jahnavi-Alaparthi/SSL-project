@@ -1,21 +1,23 @@
 import pygame
-import sys
 import numpy as np
+import sys
+from games.base_game import BoardGame
 
 SIZE = 8
-CELL = 60   
+CELL = 60
 
 WIDTH = SIZE * CELL
 HEIGHT = SIZE * CELL + 50
 
-# colours
-WHITE = (255, 255, 255)
-GREEN = (0, 120, 0)
-BLACK = (0, 0, 0)
+WHITE = (255,255,255)
+GREEN = (0,120,0)
+BLACK = (0,0,0)
 
 
-class Game:
-    def __init__(self):
+class Othello(BoardGame):
+    def __init__(self, player1, player2):
+        super().__init__(player1, player2, SIZE, SIZE)
+
         self.board = np.zeros((SIZE, SIZE))
 
         mid = SIZE // 2
@@ -24,173 +26,104 @@ class Game:
         self.board[mid-1][mid] = 1
         self.board[mid][mid-1] = 1
 
-
-class Othello(Game):
-
-    def draw_board(self, screen, current):
-        screen.fill(WHITE)
-
-        current_moves = self.get_moves(current)
-
-        for r in range(SIZE):
-            for c in range(SIZE):
-                pygame.draw.rect(screen, GREEN,
-                                 (c*CELL, r*CELL, CELL, CELL))
-                pygame.draw.rect(screen, BLACK,
-                                 (c*CELL, r*CELL, CELL, CELL), 2)
-
-                # show only current player moves
-                if (r, c) in current_moves:
-                    color = BLACK if current == 1 else WHITE
-                    pygame.draw.circle(screen, color,
-                                       (c*CELL + CELL//2, r*CELL + CELL//2), 8)
-
-                # draw coins
-                if self.board[r][c] == 1:
-                    pygame.draw.circle(screen, BLACK,
-                                       (c*CELL + CELL//2, r*CELL + CELL//2), 25)
-                elif self.board[r][c] == 2:
-                    pygame.draw.circle(screen, WHITE,
-                                       (c*CELL + CELL//2, r*CELL + CELL//2), 25)
-
     def is_valid(self, r, c, player):
         if self.board[r][c] != 0:
             return False
 
         opp = 2 if player == 1 else 1
-        dirs = [(-1,-1), (-1,0), (-1,1),
-                (0,-1),         (0,1),
-                (1,-1), (1,0), (1,1)]
+        dirs = [(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)]
 
-        for dr, dc in dirs:
-            x, y = r+dr, c+dc
-            found = False
+        for dr,dc in dirs:
+            x,y = r+dr,c+dc
+            found=False
 
-            while 0 <= x < SIZE and 0 <= y < SIZE:
-                if self.board[x][y] == opp:
-                    found = True
-                elif self.board[x][y] == player:
+            while 0<=x<SIZE and 0<=y<SIZE:
+                if self.board[x][y]==opp:
+                    found=True
+                elif self.board[x][y]==player:
                     if found:
                         return True
                     break
                 else:
                     break
-                x += dr
-                y += dc
+                x+=dr
+                y+=dc
 
         return False
 
-    def make_move(self, r, c, player):
+    def get_moves(self, player):
+        return [(r,c) for r in range(SIZE) for c in range(SIZE)
+                if self.is_valid(r,c,player)]
+
+    def make_move(self, r, c):
+        player = self.current_player
         opp = 2 if player == 1 else 1
+
         self.board[r][c] = player
 
-        dirs = [(-1,-1), (-1,0), (-1,1),
-                (0,-1),         (0,1),
-                (1,-1), (1,0), (1,1)]
+        dirs = [(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)]
 
-        for dr, dc in dirs:
-            x, y = r+dr, c+dc
-            path = []
+        for dr,dc in dirs:
+            x,y = r+dr,c+dc
+            path=[]
 
-            while 0 <= x < SIZE and 0 <= y < SIZE:
-                if self.board[x][y] == opp:
-                    path.append((x, y))
-                elif self.board[x][y] == player:
-                    for px, py in path:
-                        self.board[px][py] = player
+            while 0<=x<SIZE and 0<=y<SIZE:
+                if self.board[x][y]==opp:
+                    path.append((x,y))
+                elif self.board[x][y]==player:
+                    for px,py in path:
+                        self.board[px][py]=player
                     break
                 else:
                     break
-                x += dr
-                y += dc
-
-    def get_moves(self, player):
-        return [(r, c) for r in range(SIZE)
-                        for c in range(SIZE)
-                        if self.is_valid(r, c, player)]
-
-    def get_winner(self, p1, p2):
-        b = np.sum(self.board == 1)
-        w = np.sum(self.board == 2)
-
-        if b > w:
-            return p1
-        elif w > b:
-            return p2
-        else:
-            return "Draw"
+                x+=dr
+                y+=dc
 
 
-def run_othello(player1, player2):
+def run_game(player1, player2):
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Othello")
 
-    font = pygame.font.SysFont(None, 35)
-    win_font = pygame.font.SysFont(None, 60)
-
-    game = Othello()
-    current = 1
-    winner = None
+    game = Othello(player1, player2)
 
     running = True
 
     while running:
-        game.draw_board(screen, current)
+        screen.fill(WHITE)
 
-        
-        turn_text = "Black Turn" if current == 1 else "White Turn"
-        text = font.render(turn_text, True, BLACK)
-        screen.blit(text, (10, HEIGHT - 40))
+        moves = game.get_moves(game.current_player)
 
-        
-        if winner:
-            screen.fill(WHITE)
+        for r in range(SIZE):
+            for c in range(SIZE):
+                pygame.draw.rect(screen, GREEN, (c*CELL,r*CELL,CELL,CELL))
+                pygame.draw.rect(screen, BLACK, (c*CELL,r*CELL,CELL,CELL),1)
 
-            if winner == "Draw":
-                msg = "It's a Draw!"
-            else:
-                msg = f"🏆 {winner} Wins!"
+                if (r,c) in moves:
+                    pygame.draw.circle(screen, BLACK,
+                        (c*CELL+CELL//2,r*CELL+CELL//2),5)
 
-            win_text = win_font.render(msg, True, BLACK)
-            rect = win_text.get_rect(center=(WIDTH//2, HEIGHT//2))
-            screen.blit(win_text, rect)
-
-            pygame.display.update()
-            pygame.time.delay(3000)
-            break
+                if game.board[r][c]==1:
+                    pygame.draw.circle(screen, BLACK,
+                        (c*CELL+CELL//2,r*CELL+CELL//2),25)
+                elif game.board[r][c]==2:
+                    pygame.draw.circle(screen, WHITE,
+                        (c*CELL+CELL//2,r*CELL+CELL//2),25)
 
         for event in pygame.event.get():
-
-            if event.type == pygame.QUIT:
+            if event.type==pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = event.pos
-                c = x // CELL
-                r = y // CELL
+            if event.type==pygame.MOUSEBUTTONDOWN:
+                x,y=event.pos
+                c=x//CELL
+                r=y//CELL
 
-                if r < SIZE and c < SIZE:
-                    if (r, c) in game.get_moves(current):
-                        game.make_move(r, c, current)
-
-                        
-                        current = 2 if current == 1 else 1
-
-                        
-                        if not game.get_moves(current):
-                            current = 2 if current == 1 else 1
-
-                        
-                        if not game.get_moves(1) and not game.get_moves(2):
-                            winner = game.get_winner(player1, player2)
+                if (r,c) in game.get_moves(game.current_player):
+                    game.make_move(r,c)
+                    game.switch_turn()
 
         pygame.display.update()
 
     pygame.quit()
-    return winner
-
-
-if __name__ == "__main__":
-    run_othello("Player1", "Player2")
