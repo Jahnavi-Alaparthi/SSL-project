@@ -148,7 +148,7 @@ def run_game(player1, player2):
                     game.switch_turn()
 
         pygame.display.update()
-
+        
 
     return winner
 
