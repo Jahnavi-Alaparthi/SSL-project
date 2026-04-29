@@ -5,19 +5,26 @@ import subprocess
 from datetime import datetime
 import pygame
 import matplotlib.pyplot as plt
-from collections import Counter
 
 pygame.init()
+bg_image = pygame.image.load("bg.png")
+bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
 
 # user input
 if len(sys.argv) < 3:
-    print("Usage: python game.py player1 player2")
+    print("Error: Missing usernames")
     sys.exit(1)
 
 player1 = sys.argv[1]
 player2 = sys.argv[2]
 
-# ---------------- FILE ----------------
+if player1 == player2:
+    print("Error: Same users not allowed")
+    sys.exit(1)
+
+# -----------------------------
+# HISTORY FILE
+# -----------------------------
 HISTORY_FILE = "history.csv"
 
 if not os.path.exists(HISTORY_FILE):
@@ -25,64 +32,74 @@ if not os.path.exists(HISTORY_FILE):
         csv.writer(f).writerow(["Winner", "Loser", "Date", "Game"])
 
 def clean(name):
-    return str(name).strip() if name else "Draw"
+    return str(name).replace('"', '').strip() if name else "DRAW"
+
+
 
 def record_result(winner, loser, game):
     winner = clean(winner)
-    loser = clean(loser) if loser else "Draw"
+    loser = clean(loser) if loser else "DRAW"
 
     with open(HISTORY_FILE, "a", newline="") as f:
         csv.writer(f).writerow([winner, loser, datetime.now(), game])
 
+
 # ---------------- GRAPHS ----------------
+
 def show_graphs():
-    winners = []
-    games = []
+    try:
+        import csv
+        from collections import Counter
 
-    if not os.path.exists(HISTORY_FILE):
-        print("No data")
-        return
+        winners = []
+        games = []
 
-    with open(HISTORY_FILE, "r") as f:
-        reader = csv.reader(f)
-        next(reader, None)
+        with open(HISTORY_FILE, "r") as f:
+            reader = csv.reader(f)
+            next(reader, None)
 
-        for row in reader:
-            if len(row) < 4:
-                continue
+            for row in reader:
+                if len(row) < 4:
+                    continue
 
-            w = row[0].strip()
-            g = row[3].strip()
+                winner = row[0]
+                game = row[3]
 
-            if w and w.lower() != "draw":
-                winners.append(w)
+                if winner and winner != "DRAW":
+                    winners.append(winner)
 
-            if g:
-                games.append(g)
+                games.append(game)
 
-    if not winners and not games:
-        print("No valid data")
-        return
+        if not winners and not games:
+            print("No data available")
+            return
 
-    if winners:
-        top = Counter(winners).most_common(5)
-        players = [p for p, _ in top]
-        wins = [w for _, w in top]
+        win_counts = Counter(winners)
+
+        if win_counts:
+            plt.figure()
+            plt.bar(win_counts.keys(), win_counts.values())
+            plt.title("Wins per Player")
+
 
         plt.figure()
         plt.bar(players, wins)
         plt.title("Top 5 Players")
 
-    if games:
-        counts = Counter(games)
 
-        plt.figure()
-        plt.pie(counts.values(), labels=counts.keys(), autopct="%1.1f%%")
-        plt.title("Game Frequency")
+        if game_counts:
+            plt.figure()
+            plt.pie(game_counts.values(), labels=game_counts.keys(), autopct="%1.1f%%")
+            plt.title("Games Distribution")
 
-    plt.show()
+        plt.tight_layout()
+        plt.show()
+
+        input("Close graph window and press Enter to continue...")
+
 
 # ---------------- GAMES ----------------
+
 def run_ttt(p1, p2):
     from games.tictactoe import run_game
     return run_game(p1, p2)
@@ -95,20 +112,15 @@ def run_oth(p1, p2):
     from games.othello import run_game
     return run_game(p1, p2)
 
-# ---------------- LEADERBOARD ----------------
-def show_leaderboard(sort_by):
-    try:
-        result = subprocess.run(
-            ["bash", "leaderboard.sh", sort_by],
-            capture_output=True,
-            text=True
-        )
-        print(result.stdout)
-    except Exception as e:
-        print("Error:", e)
+# -----------------------------
+# POST GAME FLOW
+# -----------------------------
+def post_game():
+    print("\n========== LEADERBOARD ==========")
 
 # ---------------- DISPLAY ----------------
 WIDTH, HEIGHT = 900, 650
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Mini Game Hub")
 
@@ -135,6 +147,7 @@ overlay.fill((0, 0, 0))
 font = pygame.font.SysFont(None, 42)
 WHITE = (255, 255, 255)
 
+
 # ---------------- RESET ----------------
 def reset_main_display():
     global screen, background, bg_x, bg_y, overlay
@@ -159,6 +172,7 @@ class Button:
         self.action = action
 
     def draw(self):
+
         pygame.draw.rect(screen, (0, 0, 0), self.rect)
         pygame.draw.rect(screen, WHITE, self.rect, 2)
 
@@ -168,6 +182,7 @@ class Button:
 
     def clicked(self, pos):
         return self.rect.collidepoint(pos)
+
 
 # ---------------- LEADERBOARD GUI ----------------
 def leaderboard_sort_gui():
@@ -215,18 +230,22 @@ def post_game_screen(winner, game_name):
             Button("Exit", 300, 460, 300, 50, "exit"),
         ]
 
+
         for b in buttons:
             b.draw()
 
-        pygame.display.flip()
-
         for event in pygame.event.get():
+
             if event.type == pygame.QUIT:
+
                 return "exit"
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 for b in buttons:
+
                     if b.clicked(pos):
+
                         if b.action == "graphs":
                             show_graphs()
                         elif b.action == "leaderboard":
@@ -239,25 +258,30 @@ def handle_game(run_func, game_name):
     while True:
         result = run_func(player1, player2)
 
-        winner = result[0] if isinstance(result, tuple) else result
 
-        loser = player2 if winner == player1 else player1
-        if winner == "Draw":
-            loser = None
+                        # ---------------- CONNECT 4 ----------------
+                        elif b.action == "2":
+                            result = run_c4(player1, player2)
 
-        record_result(winner, loser, game_name)
+                            if isinstance(result, tuple):
+                                winner, action = result
+                            else:
+                                winner, action = result, "end"
+
+                            loser = player2 if winner == player1 else player1
+                            if winner == "Draw":
+                                loser = None
+
 
         reset_main_display()
 
         action = post_game_screen(winner, game_name)
 
-        if action == "again":
-            continue
-        elif action == "menu":
-            break
-        elif action == "exit":
-            pygame.quit()
-            sys.exit()
+
+                        # ---------------- OTHELLO ----------------
+                        elif b.action == "3":
+                            result = run_oth(player1, player2)
+
 
 # ---------------- MAIN MENU ----------------
 def game_menu_gui():
@@ -277,10 +301,13 @@ def game_menu_gui():
         title = font.render(f"{player1} vs {player2}", True, WHITE)
         screen.blit(title, title.get_rect(center=(WIDTH // 2, 100)))
 
-        for b in buttons:
-            b.draw()
+
+                        # ---------------- EXIT ----------------
+                        elif b.action == "4":
+                            running = False
 
         pygame.display.flip()
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -302,5 +329,6 @@ def game_menu_gui():
     sys.exit()
 
 # ---------------- START ----------------
+
 if __name__ == "__main__":
     game_menu_gui()
