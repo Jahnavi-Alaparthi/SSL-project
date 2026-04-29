@@ -2,7 +2,7 @@
 import pygame
 import numpy as np
 import sys
-from base_game import BoardGame
+from .base_game import BoardGame
 
 ROWS = 7
 COLS = 7
@@ -149,7 +149,7 @@ def run_game(player1, player2):
 
         pygame.display.update()
 
-    pygame.quit()
+
     return winner
 
 
